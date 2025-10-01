@@ -1,5 +1,5 @@
 import streamlit as st
-import regex as re
+import re
 from datetime import datetime, date
 import requests
 import streamlit.components.v1
@@ -3249,4 +3249,5 @@ if selected_page != st.session_state.page and st.session_state.page not in sub_p
     st.rerun()
 elif selected_page != "Library" and st.session_state.page in sub_pages:
     st.session_state.page = selected_page
+
     st.rerun()
