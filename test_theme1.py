@@ -3301,20 +3301,80 @@ elif st.session_state.page == "Diary":
         """,
         unsafe_allow_html=True
     )
+
     st.title("Cosmic Diary")
     
-    # --- NASA APOD ---
+    # --- NASA APOD with Fallbacks ---
     st.subheader("Cool Space Picture?")
-    NASA_API_KEY = "M8Hga9UUxCCLGg5bpO80K4LlIUl108rNcVulsaAW"
-    apod_url = f"https://api.nasa.gov/planetary/apod?api_key={NASA_API_KEY}"
     
-    try:
-        apod_data = requests.get(apod_url, timeout=5).json()
-        if apod_data.get("media_type") == "image":
-            st.image(apod_data["url"], caption=apod_data["title"])
-        st.write(apod_data.get("explanation", ""))
-    except Exception as e:
-        st.warning(f"Could not fetch NASA APOD: {e}")
+    def fetch_space_image():
+        """Try multiple space image APIs with fallbacks"""
+        
+        # Option 1: NASA APOD
+        try:
+            NASA_API_KEY = "M8Hga9UUxCCLGg5bpO80K4LlIUl108rNcVulsaAW"
+            apod_url = f"https://api.nasa.gov/planetary/apod?api_key={NASA_API_KEY}"
+            response = requests.get(apod_url, timeout=15)
+            apod_data = response.json()
+            
+            if apod_data.get("media_type") == "image":
+                return {
+                    "source": "NASA APOD",
+                    "image_url": apod_data["url"],
+                    "title": apod_data["title"],
+                    "description": apod_data.get("explanation", "")
+                }
+        except Exception as e:
+            st.info(f"NASA APOD unavailable, trying alternative source...")
+        
+        # Option 2: NASA Image and Video Library
+        try:
+            search_query = "space nebula galaxy"
+            nasa_library_url = f"https://images-api.nasa.gov/search?q={search_query}&media_type=image"
+            response = requests.get(nasa_library_url, timeout=15)
+            data = response.json()
+            
+            if data.get("collection", {}).get("items"):
+                item = data["collection"]["items"][0]
+                return {
+                    "source": "NASA Image Library",
+                    "image_url": item["links"][0]["href"],
+                    "title": item["data"][0].get("title", "Space Image"),
+                    "description": item["data"][0].get("description", "")
+                }
+        except Exception as e:
+            st.info(f"NASA Library unavailable, trying another source...")
+        
+        # Option 3: Unsplash (space images)
+        try:
+            unsplash_url = "https://source.unsplash.com/1600x900/?space,astronomy,galaxy"
+            return {
+                "source": "Unsplash",
+                "image_url": unsplash_url,
+                "title": "Beautiful Space Photography",
+                "description": "A stunning view of the cosmos from Unsplash's space collection."
+            }
+        except Exception as e:
+            st.info(f"Unsplash unavailable...")
+        
+        # Option 4: Fallback to a static space image
+        return {
+            "source": "Static Image",
+            "image_url": "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a",
+            "title": "The Milky Way",
+            "description": "Our home galaxy, captured in all its glory."
+        }
+    
+    # Fetch and display the space image
+    space_data = fetch_space_image()
+    
+    if space_data:
+        st.image(space_data["image_url"], caption=space_data["title"])
+        st.caption(f"*Source: {space_data['source']}*")
+        if space_data["description"]:
+            st.write(space_data["description"])
+    else:
+        st.error("Unable to load space imagery at this time. Please try again later.")      
     
     # Add separator before Tonight's Sky
     st.markdown('<hr class="separator">', unsafe_allow_html=True)
